@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренировка</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #timer {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        #exercise {
+            font-size: 20px;
+            margin: 20px 0;
+        }
+        #customDialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 2px solid black;
+            padding: 20px;
+            z-index: 1000;
+            width: 80%;
+            max-width: 400px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #dialogOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <h1>Тренировка</h1>
+    <div id="exercise"></div>
+    <div id="timer"></div> <!-- Таймер убран по умолчанию -->
+    <button id="nextButton" onclick="nextExercise()" style="display:none;">Следующее упражнение</button>
+    <button id="doneButton" onclick="exerciseDone()" style="display:none;">Я сделал</button>
+
+    <div id="dialogOverlay"></div>
+    <div id="customDialog">
+        <p>С возвращением! Начнем с начала?</p>
+        <button onclick="restartExercise()">Ок</button>
+        <button onclick="goToMenu()">Перейти в меню</button>
+    </div>
+
+    <script>
+        const exercises = {
+            1: [
+                { name: "Отжимания на коленях: 4 подхода по 12 раз", timer: false },
+                { name: "Планка: 3 подхода по 30 секунд", timer: true },
+                { name: "Лопаточные отжимания: 3 подхода по 10 раз", timer: false },
+                { name: "Отжимания от стены: 3 подхода по 15 раз", timer: false },
+                { name: "Подъемы ног лёжа: 3 подхода по 15 раз", timer: false },
+                { name: "Планка на руках: 3 подхода по 20 секунд", timer: true }
+            ],
+            3: [
+                { name: "Классические отжимания: 3 подхода по 5 раз", timer: false },
+                { name: "Отжимания на коленях: 3 подхода по 15 раз", timer: false },
+                { name: "Планка: 3 подхода по 30 секунд", timer: true },
+                { name: "Отжимания с упором на возвышенность: 3 подхода по 10 раз", timer: false },
+                { name: "Лопаточные отжимания: 3 подхода по 12 раз", timer: false },
+                { name: "Подъемы ног лёжа: 3 подхода по 20 раз", timer: false }
+            ],
+            5: [
+                { name: "Классические отжимания: 4 подхода по 10 раз", timer: false },
+                { name: "Отжимания с упором на возвышенность: 3 подхода по 12-15 раз", timer: false },
+                { name: "Планка: 3 подхода по 30 секунд", timer: true },
+                { name: "Отжимания на коленях: 3 подхода по 20 раз", timer: false },
+                { name: "Подъемы ног лёжа: 3 подхода по 25 раз", timer: false },
+                { name: "Обратные отжимания от стула (для трицепсов): 3 подхода по 10 раз", timer: false }
+            ],
+            7: [
+                { name: "Классические отжимания: 5 подходов по 15 раз", timer: false },
+                { name: "Планка: 3 подхода по 30 секунд", timer: true },
+                { name: "Узкие отжимания (для трицепсов): 3 подхода по 10 раз", timer: false },
+                { name: "Плиометрические отжимания (с легким прыжком вверх): 3 подхода по 8 раз", timer: false },
+                { name: "Подтягивания на перекладине (если доступно): 3 подхода по 6 раз", timer: false },
+                { name: "Обратные отжимания от стула (для трицепсов): 3 подхода по 10 раз", timer: false }
+            ],
+            9: [
+                { name: "Классические отжимания: 5 подходов по 20 раз", timer: false },
+                { name: "Планка на руках: 3 подхода по 30 секунд", timer: true },
+                { name: "Отжимания с широким хватом: 3 подхода по 15 раз", timer: false },
+                { name: "Узкие отжимания: 3 подхода по 12 раз", timer: false },
+                { name: "Обратные отжимания от стула: 3 подхода по 12 раз", timer: false },
+                { name: "Подтягивания (если доступно): 3 подхода по 8 раз", timer: false }
+            ],
+            11: [
+                { name: "Классические отжимания: 5 подходов по 25 раз", timer: false },
+                { name: "Планка на руках: 3 подхода по 30 секунд", timer: true },
+                { name: "Отжимания на одной руке (с поддержкой второй руки): 3 подхода по 5 раз на каждую руку", timer: false },
+                { name: "Плиометрические отжимания: 3 подхода по 10 раз", timer: false },
+                { name: "Обратные отжимания от стула: 3 подхода по 15 раз", timer: false },
+                { name: "Подтягивания (если доступно): 3 подхода по 10 раз", timer: false }
+            ]
+        };
+
+        let currentExercise = 0;
+        let timer;
+        let countdown;
+
+        function getUrlParameter(name) {
+            return decodeURIComponent((new RegExp('[?&]' + name + '=([^&]*)').exec(location.search) || [null])[1] || null);
+        }
+
+        function startCountdown() {
+            countdown = 3; // Начинаем с 3 секунд
+            document.getElementById('timer').innerText = countdown;
+
+            timer = setInterval(function() {
+                countdown--;
+                document.getElementById('timer').innerText = countdown;
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    startTimer(30); // Запускаем таймер на 30 секунд после отсчета
+                }
+            }, 1000);
+        }
+
+        function startTimer(duration) {
+            let timerDisplay = document.getElementById('timer');
+            timerDisplay.innerText = duration;
+
+            timer = setInterval(function() {
+                duration--;
+                timerDisplay.innerText = duration;
+                if (duration <= 0) {
+                    clearInterval(timer);
+                    document.getElementById('nextButton').style.display = 'inline-block'; // Показать кнопку для следующего упражнения
+                    document.getElementById('doneButton').style.display = 'none'; // Скрыть кнопку "Я сделал"
+                }
+            }, 1000);
+        }
+
+        function nextExercise() {
+            clearInterval(timer);
+            const month = getUrlParameter('month');
+            const exerciseList = exercises[month];
+
+            if (currentExercise < exerciseList.length) {
+                const exercise = exerciseList[currentExercise];
+                document.getElementById('exercise').innerText = exercise.name;
+                currentExercise++;
+
+                // Проверяем, есть ли таймер для текущего упражнения
+                if (exercise.timer) {
+                    document.getElementById('doneButton').style.display = 'none'; // Скрываем кнопку "Я сделал"
+                    document.getElementById('nextButton').style.display = 'none'; // Скрываем кнопку "Следующее упражнение"
+                    startCountdown(); // Запускаем обратный отсчет
+                } else {
+                    document.getElementById('doneButton').style.display = 'inline-block'; // Показываем кнопку "Я сделал"
+                    document.getElementById('nextButton').style.display = 'none'; // Скрываем кнопку "Следующее упражнение"
+                    document.getElementById('timer').innerText = ""; // Убираем текст таймера
+                }
+            } else {
+                alert("Вы завершили все упражнения!");
+                goToMenu(); // Перейти в меню
+            }
+        }
+
+        function exerciseDone() {
+            if (currentExercise > 0) {
+                document.getElementById('nextButton').style.display = 'inline-block'; // Показываем кнопку "Следующее упражнение"
+                document.getElementById('doneButton').style.display = 'none'; // Скрываем кнопку "Я сделал"
+            }
+        }
+
+        function restartExercise() {
+            currentExercise = 0;
+            document.getElementById('exercise').innerText = '';
+            document.getElementById('timer').innerText = '';
+            document.getElementById('nextButton').style.display = 'none'; // Скрыть кнопку "Следующее упражнение"
+            document.getElementById('doneButton').style.display = 'none'; // Скрыть кнопку "Я сделал"
+            showDialog(false);
+            nextExercise(); // Начать с первого упражнения
+        }
+
+        function goToMenu() {
+            window.location.href = "index.html"; // Перейти в меню
+        }
+
+        function showDialog(show) {
+            document.getElementById('dialogOverlay').style.display = show ? 'block' : 'none';
+            document.getElementById('customDialog').style.display = show ? 'block' : 'none';
+        }
+
+        // Начинаем с первого упражнения
+        nextExercise();
+    </script>
+</body>
+</html>
